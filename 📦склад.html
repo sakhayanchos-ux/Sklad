@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>Herbalife Склад Супервайзора</title>
+    <link rel="icon" type="image/png" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='85' font-size='85' text-anchor='middle' fill='%236C4AA6'%3E📦%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='85' font-size='85' text-anchor='middle' fill='%236C4AA6'%3E📦%3C/text%3E%3C/svg%3E">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(145deg, #BDCFFF 0%, #B8C0FF 30%, #C8B6FE 70%, #E7C5FF 100%);
+            min-height: 100vh;
+            padding: 20px 12px 80px;
+        }
+        .app-container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            padding: 20px 16px 32px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        h1 { font-size: 1.9rem; font-weight: 700; background: linear-gradient(135deg, #2C2A6B, #7B2F9D); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; }
+        .sub { text-align: center; color: #3b3b6b; margin-bottom: 20px; }
+        .stats-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .stat-card { flex: 1; background: #FDF8FF; border-radius: 28px; padding: 10px 6px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #E7C5FF; }
+        .stat-label { font-size: 0.7rem; font-weight: 600; color: #5E3A7C; }
+        .stat-value { font-size: 1.2rem; font-weight: 800; color: #2b1b3a; }
+        .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        .btn { padding: 10px 8px; border: none; border-radius: 44px; font-weight: 700; font-size: 0.8rem; background: white; cursor: pointer; flex: 1 0 auto; text-align: center; }
+        .btn-primary { background: #6C4AA6; color: white; }
+        .btn-secondary { background: #FED5FF; color: #4A2D6E; }
+        .btn-warning { background: #FFE1A0; color: #5C3A00; }
+        .btn-pdf { background: #E6D9FF; color: #3b2b5c; }
+        .tabs { display: flex; gap: 8px; margin: 15px 0 10px; border-bottom: 2px solid #E7C5FF; }
+        .tab { padding: 6px 16px; background: none; border: none; font-weight: 600; cursor: pointer; }
+        .tab.active { background: #C8B6FE; border-radius: 30px; }
+        .search-box input { width: 100%; padding: 10px 16px; border-radius: 40px; border: 1px solid #C8B6FE; margin-bottom: 12px; }
+        .product-list { max-height: 380px; overflow-y: auto; background: #FFFDF7; border-radius: 32px; padding: 6px 4px; margin-bottom: 16px; }
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #F0E2FF; flex-wrap: wrap; gap: 6px; }
+        .product-info { flex: 2; }
+        .product-name { font-weight: 700; font-size: 0.85rem; }
+        .product-stock { font-size: 0.75rem; background: #F1E6FF; padding: 2px 8px; border-radius: 30px; }
+        .out-of-stock { background: #FFE6F0; color: #c44569; }
+        .icon-btn { background: #EFE0FF; border: none; font-size: 1rem; width: 34px; height: 34px; border-radius: 30px; cursor: pointer; }
+        .history-log { background: #F5F0FF; border-radius: 32px; padding: 10px; max-height: 260px; overflow-y: auto; margin-top: 12px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .small-pdf { background: #d9c2ff; border: none; border-radius: 50px; padding: 4px 10px; font-size: 0.7rem; font-weight: bold; }
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .modal-card { background: white; width: 92%; max-width: 500px; border-radius: 48px; padding: 20px; }
+        select, input { width: 100%; padding: 10px; margin: 6px 0; border-radius: 34px; border: 1px solid #c8b6fe; }
+        footer { font-size: 0.7rem; text-align: center; margin-top: 16px; color: #4a3b62; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <h1>📦 HerbaFlow Pro</h1>
+    <div class="sub">Супервайзер | Склад + Финансы + Обмен</div>
+
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">📦 Товаров</div><div class="stat-value" id="totalSku">0</div></div>
+        <div class="stat-card"><div class="stat-label">⭐ Очки (VP)</div><div class="stat-value" id="totalPoints">0</div></div>
+        <div class="stat-card"><div class="stat-label">💰 СВ цена (закуп)</div><div class="stat-value" id="totalWholesale">0</div></div>
+        <div class="stat-card"><div class="stat-label">🏷️ Розница склада</div><div class="stat-value" id="totalRetail">0</div></div>
+        <div class="stat-card"><div class="stat-label">💸 Доход (розница)</div><div class="stat-value" id="totalRetailIncome">0 ₽</div></div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" id="openIncomeBtn">➕ ПРИХОД</button>
+        <button class="btn btn-secondary" id="openOutcomeBtn">📝 ПРОДАЖА</button>
+        <button class="btn btn-warning" id="openExchangeBtn">🔄 ЗАМЕНА/ОБМЕН</button>
+        <button class="btn btn-pdf" id="exportStockPdfBtn">📄 ОСТАТКИ PDF</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="all">📋 Все операции</button>
+        <button class="tab" data-tab="income">⬆️ Приходы</button>
+        <button class="tab" data-tab="outcome">⬇️ Продажи</button>
+        <button class="tab" data-tab="exchange">🔄 Обмены</button>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 6px;">
+        <button class="small-pdf" id="exportIncomePdfBtn">PDF Приходы</button>
+        <button class="small-pdf" id="exportOutcomePdfBtn">PDF Продажи</button>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 Найти продукт...">
+    </div>
+    <div class="product-list" id="productListContainer"></div>
+
+    <div class="history-log">
+        <div class="history-header"><strong>📜 История</strong></div>
+        <div id="historyEntries">-- загрузка --</div>
+    </div>
+    <footer>Данные автосохраняются | При продаже показывается примерный чек (НДС, доход компании, ваш доход)</footer>
+</div>
+
+<script>
+    // ======================= ПРАЙС-ЛИСТ =======================
+    const rawProducts = [
+        { name: "Коктейль Формула 1 - Куриный крем-суп", sku: "395К", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Ваниль", sku: "500К", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Кокос", sku: "0930", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Банан в карамели", sku: "326К", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Манго", sku: "102К", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Дыня", sku: "2793", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Клубника", sku: "501К", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Нежный шоколад", sku: "4468", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Хрустящее печенье", sku: "4467", vp: 23.95, svPrice: 1909.30, retail: 3819 },
+        { name: "Коктейль Формула 1 - Дыня 2 кг", sku: "005К", vp: 99.60, svPrice: 7055.26, retail: 14111 },
+        { name: "Протеиновый кофе Латте Макиато", sku: "012К", vp: 23.95, svPrice: 2196.00, retail: 4392 },
+        { name: "Вечерний Коктейль Формула 1", sku: "1636", vp: 20.15, svPrice: 1604.30, retail: 3209 },
+        { name: "Формула 3 Белковый", sku: "0242", vp: 17.95, svPrice: 1627.48, retail: 3255 },
+        { name: "Протеиновая смесь для выпечки", sku: "528К", vp: 20.00, svPrice: 1770.22, retail: 3540 },
+        { name: "Травяной напиток Классический 51г", sku: "178К", vp: 19.95, svPrice: 1384.70, retail: 2769 },
+        { name: "Травяной напиток Лимон 51г", sku: "180К", vp: 19.95, svPrice: 1384.70, retail: 2769 },
+        { name: "Травяной напиток Малина 51г", sku: "182К", vp: 19.95, svPrice: 1384.70, retail: 2769 },
+        { name: "Травяной Классический 102г", sku: "179К", vp: 34.95, svPrice: 2583.96, retail: 5168 },
+        { name: "Алоэ Манго", sku: "0757", vp: 24.95, svPrice: 1731.18, retail: 3462 },
+        { name: "Алоэ Классика", sku: "0006", vp: 24.95, svPrice: 1731.18, retail: 3462 },
+        { name: "Алоэ Клюква", sku: "1189", vp: 24.95, svPrice: 1731.18, retail: 3462 },
+        { name: "Овсяно-яблочный напиток", sku: "2864", vp: 22.95, svPrice: 1669.57, retail: 3339 },
+        { name: "Комплекс пищевых волокон", sku: "2865", vp: 22.95, svPrice: 1669.57, retail: 3339 },
+        { name: "Протеиновый батончик Лимонный (14шт)", sku: "0260", vp: 7.70, svPrice: 1399.34, retail: 2799 },
+        { name: "Батончик ваниль карамель (28шт)", sku: "001К", vp: 9.24, svPrice: 1678.72, retail: 3357 },
+        { name: "Батончик лимон (28шт)", sku: "002К", vp: 9.24, svPrice: 1678.72, retail: 3357 },
+        { name: "Батончик F1 Экспресс Тёмный шоколад (7шт)", sku: "4472", vp: 14.00, svPrice: 1094.34, retail: 2189 },
+        { name: "Батончик F1 Клюква белый шоколад (7шт)", sku: "4473", vp: 14.00, svPrice: 1094.34, retail: 2189 },
+        { name: "Протеиновые чипсы барбекю (10шт)", sku: "141К", vp: 11.75, svPrice: 1413.98, retail: 2828 },
+        { name: "Протеиновые чипсы сметана/лук (10шт)", sku: "142К", vp: 11.75, svPrice: 1413.98, retail: 2828 },
+        { name: "Термо Комплит", sku: "0050", vp: 30.95, svPrice: 2253.34, retail: 4507 },
+        { name: "Фито комплит", sku: "236К", vp: 29.50, svPrice: 2475.99, retail: 4952 },
+        { name: "Клеточный Активатор", sku: "3123", vp: 21.95, svPrice: 1610.40, retail: 3221 },
+        { name: "Термоджеткис (желтые)", sku: "0117", vp: 20.50, svPrice: 1331.63, retail: 2663 },
+        { name: "Cell-u-loss", sku: "0111", vp: 15.75, svPrice: 1360.30, retail: 2721 },
+        { name: "Найтворкс", sku: "0036", vp: 75.00, svPrice: 4911.72, retail: 9823 },
+        { name: "Коктейль Н24 Восстановление", sku: "1437", vp: 43.00, svPrice: 2666.92, retail: 5334 },
+        { name: "Грин Макс Селект", sku: "110К", vp: 38.91, svPrice: 3498.96, retail: 6998 },
+        { name: "Коллаген Биоти Комплекс", sku: "076К", vp: 37.10, svPrice: 3248.86, retail: 6498 },
+        { name: "Микробиотик Макс", sku: "173К", vp: 27.10, svPrice: 2785.87, retail: 5572 },
+        { name: "Гербалайфайн Макс", sku: "0043", vp: 19.40, svPrice: 1545.74, retail: 3091 },
+        { name: "Лифтоф апельсин", sku: "3151", vp: 15.95, svPrice: 1299.30, retail: 2599 },
+        { name: "Шизандра Эдванс", sku: "0022", vp: 15.50, svPrice: 1144.36, retail: 2289 },
+        { name: "Чай N-R-G", sku: "0102", vp: 14.75, svPrice: 1011.99, retail: 2024 },
+        { name: "Формула 2 - Комплекс для Мужчин", sku: "1745", vp: 13.55, svPrice: 1401.78, retail: 2804 }
+    ];
+
+    let stock = {};
+    let operations = [];
+    let retailIncomeTotal = 0; // накопленный доход только от розничных продаж (скидка 0%)
+
+    // Загрузка
+    function loadData() {
+        const savedStock = localStorage.getItem("herba_stock");
+        if(savedStock) stock = JSON.parse(savedStock);
+        else rawProducts.forEach(p => stock[p.sku] = 0);
+        const savedOps = localStorage.getItem("herba_history");
+        if(savedOps) operations = JSON.parse(savedOps);
+        const savedIncome = localStorage.getItem("retail_income");
+        retailIncomeTotal = savedIncome ? parseFloat(savedIncome) : 0;
+    }
+    function saveAll() {
+        localStorage.setItem("herba_stock", JSON.stringify(stock));
+        localStorage.setItem("herba_history", JSON.stringify(operations));
+        localStorage.setItem("retail_income", retailIncomeTotal);
+    }
+
+    // Статистика + доход розница
+    function computeStats() {
+        let totalVP = 0, totalSv = 0, totalRet = 0, skuCount = 0;
+        rawProducts.forEach(p => {
+            const q = stock[p.sku] || 0;
+            if(q > 0) skuCount++;
+            totalVP += p.vp * q;
+            totalSv += p.svPrice * q;
+            totalRet += p.retail * q;
+        });
+        document.getElementById("totalSku").innerText = skuCount;
+        document.getElementById("totalPoints").innerText = totalVP.toFixed(1);
+        document.getElementById("totalWholesale").innerText = totalSv.toFixed(0) + " ₽";
+        document.getElementById("totalRetail").innerText = totalRet.toFixed(0) + " ₽";
+        document.getElementById("totalRetailIncome").innerText = retailIncomeTotal.toFixed(0) + " ₽";
+    }
+
+    // Продажа с чеком
+    function sellProduct(prod, qty, discountPercent, clientName) {
+        if((stock[prod.sku]||0) < qty) { alert("Не хватает на складе"); return false; }
+        let priceClient = prod.retail;
+        let discName = "розница";
+        if(discountPercent === 42) { priceClient = prod.retail * 0.58; discName = "42%"; }
+        else if(discountPercent === 35) { priceClient = prod.retail * 0.65; discName = "35%"; }
+        else if(discountPercent === 25) { priceClient = prod.retail * 0.75; discName = "25%"; }
+        else if(discountPercent === 15) { priceClient = prod.retail * 0.85; discName = "15%"; }
+        else { discName = "розница 0%"; }
+
+        const totalClient = priceClient * qty;
+        const nds = totalClient * 0.2;       // 20% НДС (упрощённо)
+        const companyIncome = totalClient - nds;
+        const myIncome = totalClient - (prod.svPrice * qty); // доход супервайзера (разница между ценой клиента и закупом)
+
+        let message = `💰 ЧЕК ДЛЯ КЛИЕНТА (${clientName}):\n`;
+        message += `Товар: ${prod.name}\nКол-во: ${qty}\nЦена за шт: ${priceClient.toFixed(2)}₽\n`;
+        message += `Итого: ${totalClient.toFixed(2)}₽\n`;
+        message += `В том числе НДС (20%): ${nds.toFixed(2)}₽\n`;
+        message += `💰 Доход компании (чистыми): ${companyIncome.toFixed(2)}₽\n`;
+        message += `✅ ВАШ ДОХОД (СВ - закуп): ${myIncome.toFixed(2)}₽\n`;
+        alert(message);
+
+        // Списание
+        stock[prod.sku] -= qty;
+        // Если продажа розничная (скидка 0) - добавляем в доход розница
+        if(discountPercent === 0) retailIncomeTotal += totalClient;
+        const op = {
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            type: "ПРОДАЖА",
+            details: `${clientName} купил ${qty}x ${prod.name} (скидка ${discName}, сумма ${totalClient.toFixed(2)}₽, ваш доход ${myIncome.toFixed(2)}₽)`,
+            deltaPoints: -prod.vp * qty,
+            deltaSv: -prod.svPrice * qty,
+            deltaRet: -prod.retail * qty,
+            client: clientName,
+            discount: discountPercent
+        };
+        operations.unshift(op);
+        saveAll();
+        computeStats();
+        renderProducts(document.getElementById("searchInput").value);
+        renderHistoryByTab();
+        return true;
+    }
+
+    // Обмен между консультантами
+    function exchangeProducts() {
+        const prodOutSku = prompt("Введите SKU товара, который ОТДАЁТЕ (например, 0757):");
+        const prodOut = rawProducts.find(p => p.sku === prodOutSku);
+        if(!prodOut) { alert("Товар не найден"); return; }
+        const qtyOut = parseInt(prompt(`Кол-во отдаваемого ${prodOut.name}:`, "1"));
+        if((stock[prodOut.sku]||0) < qtyOut) { alert("Недостаточно на складе"); return; }
+
+        const prodInSku = prompt("Введите SKU товара, который ПОЛУЧАЕТЕ:");
+        const prodIn = rawProducts.find(p => p.sku === prodInSku);
+        if(!prodIn) { alert("Товар не найден"); return; }
+        const qtyIn = parseInt(prompt(`Кол-во получаемого ${prodIn.name}:`, "1"));
+
+        let extraPayment = parseFloat(prompt("Доплата (если вы доплачиваете — положительное число, если вам доплачивают — отрицательное):", "0"));
+        if(isNaN(extraPayment)) extraPayment = 0;
+
+        const valueOut = prodOut.svPrice * qtyOut;
+        const valueIn = prodIn.svPrice * qtyIn;
+        const balance = valueIn - valueOut; // сколько должен доплатить тот, кто получает товар большей стоимости
+
+        let finalMessage = `🔄 ОБМЕН:\nВы отдаёте: ${qtyOut} x ${prodOut.name} (СВ ${valueOut}₽)\n`;
+        finalMessage += `Вы получаете: ${qtyIn} x ${prodIn.name} (СВ ${valueIn}₽)\n`;
+        finalMessage += `Разница по закупочным ценам: ${balance.toFixed(2)}₽\n`;
+        if(extraPayment !== 0) finalMessage += `Доплата по договорённости: ${extraPayment}₽\n`;
+        finalMessage += `ИТОГО: ${(balance + extraPayment).toFixed(2)}₽ (если >0 — вы должны, <0 — должны вам)`;
+        alert(finalMessage);
+
+        // Проводим обмен
+        stock[prodOut.sku] -= qtyOut;
+        stock[prodIn.sku] = (stock[prodIn.sku]||0) + qtyIn;
+
+        const op = {
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            type: "ОБМЕН",
+            details: `Отдал ${qtyOut}x ${prodOut.name} (${prodOut.sku}) → Получил ${qtyIn}x ${prodIn.name} (${prodIn.sku}). Доплата: ${extraPayment}₽. Баланс: ${(balance+extraPayment).toFixed(2)}₽`,
+            exchange: true
+        };
+        operations.unshift(op);
+        saveAll();
+        computeStats();
+        renderProducts(document.getElementById("searchInput").value);
+        renderHistoryByTab();
+    }
+
+    function addStockSimple(sku, qty=1) {
+        const prod = rawProducts.find(p => p.sku === sku);
+        if(!prod) return;
+        stock[sku] = (stock[sku]||0) + qty;
+        operations.unshift({ id: Date.now(), date: new Date().toLocaleString(), type: "ПРИХОД", details: `+${qty} x ${prod.name}` });
+        saveAll(); computeStats(); renderProducts(document.getElementById("searchInput").value); renderHistoryByTab();
+    }
+
+    function renderProducts(search = "") {
+        const container = document.getElementById("productListContainer");
+        let filtered = rawProducts.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search));
+        if(!filtered.length) { container.innerHTML = "<div>Нет товаров</div>"; return; }
+        let html = "";
+        filtered.forEach(prod => {
+            const qty = stock[prod.sku] || 0;
+            html += `<div class="product-item">
+                <div class="product-info">
+                    <div class="product-name">${prod.name} <span style="background:#E7C5FF;padding:2px 8px;border-radius:20px;">${prod.sku}</span></div>
+                    <div><span class="product-stock ${qty===0?'out-of-stock':''}">📦 ${qty} шт</span> ⭐ ${prod.vp} VP</div>
+                    <div style="font-size:0.7rem;">💰СВ ${prod.svPrice}₽ | розница ${prod.retail}₽</div>
+                </div>
+                <div class="product-actions">
+                    <button class="icon-btn" data-sku="${prod.sku}" data-act="incomeQuick">➕</button>
+                    <button class="icon-btn" data-sku="${prod.sku}" data-act="saleQuick">💲</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll("[data-act='incomeQuick']").forEach(btn => btn.addEventListener("click", () => addStockSimple(btn.dataset.sku, 1)));
+        document.querySelectorAll("[data-act='saleQuick']").forEach(btn => btn.addEventListener("click", () => {
+            const p = rawProducts.find(p => p.sku === btn.dataset.sku);
+            if((stock[p.sku]||0) <= 0) { alert("Нет на складе"); return; }
+            const disc = prompt("Скидка: 0-розница, 42, 35, 25, 15", "0");
+            let discPercent = 0;
+            if(disc === "42") discPercent = 42;
+            else if(disc === "35") discPercent = 35;
+            else if(disc === "25") discPercent = 25;
+            else if(disc === "15") discPercent = 15;
+            else discPercent = 0;
+            const name = prompt("Имя клиента", "Клиент");
+            sellProduct(p, 1, discPercent, name || "Гость");
+        }));
+    }
+
+    let currentTab = "all";
+    function renderHistoryByTab() {
+        let filtered = operations;
+        if(currentTab === "income") filtered = operations.filter(op => op.type === "ПРИХОД");
+        if(currentTab === "outcome") filtered = operations.filter(op => op.type === "ПРОДАЖА");
+        if(currentTab === "exchange") filtered = operations.filter(op => op.type === "ОБМЕН");
+        const container = document.getElementById("historyEntries");
+        if(!filtered.length) { container.innerHTML = "<p>Нет записей</p>"; return; }
+        let html = "";
+        filtered.slice(0, 50).forEach(op => { html += `<p>🕒 ${op.date} — <strong>${op.type}</strong>: ${op.details}</p>`; });
+        container.innerHTML = html;
+    }
+
+    // PDF
+    async function exportToPDF(title, headers, dataRows) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16); doc.text(title, 14, 15);
+        doc.setFontSize(9); doc.text(`Дата: ${new Date().toLocaleString()}`, 14, 23);
+        doc.autoTable({ head: [headers], body: dataRows, startY: 30, styles: { fontSize: 8 } });
+        doc.save(`${title}.pdf`);
+    }
+    function exportStock() {
+        const rows = rawProducts.filter(p => (stock[p.sku]||0) > 0).map(p => [p.name, p.sku, stock[p.sku], p.vp, p.svPrice, p.retail, (stock[p.sku]*p.svPrice).toFixed(0)]);
+        if(!rows.length) { alert("Нет товаров"); return; }
+        exportToPDF("Остатки_склада", ["Товар","SKU","Кол-во","VP","Цена СВ","Розница","Общая СВ"], rows);
+    }
+    function exportIncome() {
+        const rows = operations.filter(op=>op.type==="ПРИХОД").map(op=>[op.date, op.details]);
+        exportToPDF("Приходы", ["Дата","Описание"], rows);
+    }
+    function exportOutcome() {
+        const rows = operations.filter(op=>op.type==="ПРОДАЖА").map(op=>[op.date, op.details]);
+        exportToPDF("Продажи", ["Дата","Описание"], rows);
+    }
+
+    function showIncomeModal() { const sku = prompt("SKU товара для прихода:"); const prod = rawProducts.find(p=>p.sku===sku); if(prod) addStockSimple(prod.sku, parseInt(prompt("Кол-во", "1"))||1); else alert("Не найден"); }
+    function showOutcomeModal() { alert("Используйте кнопку 💲 рядом с товаром или кнопку ПРОДАЖА в карточке"); }
+
+    // Event listeners
+    document.getElementById("openIncomeBtn").onclick = showIncomeModal;
+    document.getElementById("openOutcomeBtn").onclick = showOutcomeModal;
+    document.getElementById("openExchangeBtn").onclick = exchangeProducts;
+    document.getElementById("exportStockPdfBtn").onclick = exportStock;
+    document.getElementById("exportIncomePdfBtn").onclick = exportIncome;
+    document.getElementById("exportOutcomePdfBtn").onclick = exportOutcome;
+    document.getElementById("searchInput").addEventListener("input", e => renderProducts(e.target.value));
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+            tab.classList.add("active");
+            currentTab = tab.dataset.tab;
+            renderHistoryByTab();
+        });
+    });
+
+    loadData(); computeStats(); renderProducts(""); renderHistoryByTab();
+</script>
+</body>
+</html>
