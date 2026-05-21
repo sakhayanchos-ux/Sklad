@@ -34,6 +34,7 @@
         .btn:active { transform: scale(0.97); }
         .btn-primary { background: #B29CD6; color: #2E1A47; }
         .btn-sale { background: #FFE0F0; color: #8B3D62; }
+        .btn-personal { background: #D6E8FF; color: #2E5A7C; }
         .btn-exchange { background: #FFF0D6; color: #A5672C; }
         .btn-danger { background: #FFE0E5; color: #BB3B5C; }
         .btn-excel { background: #D9E6DB; color: #2C5A2E; }
@@ -89,6 +90,7 @@
     <div class="action-buttons">
         <button class="btn btn-primary" id="incomeMassBtn">➕ ПРИХОД</button>
         <button class="btn btn-sale" id="saleMassBtn">📤 ПРОДАЖА</button>
+        <button class="btn btn-personal" id="personalWriteOffBtn">📦 ЛИЧНОЕ</button>
         <button class="btn btn-exchange" id="exchangeBtn">🔄 ЗАМЕНА</button>
     </div>
 
@@ -97,6 +99,7 @@
         <button class="tab" data-tab="main">🏠 Основной склад</button>
         <button class="tab" data-tab="income">⬆️ Приходы</button>
         <button class="tab" data-tab="sale">⬇️ Продажи</button>
+        <button class="tab" data-tab="personal">🎁 Личное списание</button>
         <button class="tab" data-tab="exchange">🔄 Обмены</button>
     </div>
 
@@ -116,7 +119,7 @@
         <button class="btn btn-excel" id="exportIncomeBtn">📊 Excel: Приходы</button>
         <button class="btn btn-excel" id="exportSaleBtn">📊 Excel: Продажи</button>
     </div>
-    <footer>🌿 Полный ассортимент из прайс-листа | 🗑️ у истории — отмена операции с возвратом товаров</footer>
+    <footer>🌿 Личное списание — для себя, подарков, дегустации (без дохода) | 🗑️ у истории — отмена операции</footer>
 </div>
 
 <script>
@@ -252,6 +255,33 @@
         return op;
     }
 
+    // ЛИЧНОЕ СПИСАНИЕ (без дохода, без скидок)
+    function showPersonalWriteOff() {
+        let html = '';
+        products.forEach(p => {
+            html += `<div class="modal-product-row">
+                <span class="modal-product-name">${p.name} (${p.sku}) [в наличии: ${stock[p.sku]||0}]</span>
+                <input type="number" id="qty_${p.sku}" class="modal-qty-input" value="0" min="0" step="1">
+            </div>`;
+        });
+        showCustomModal('📦 ЛИЧНОЕ СПИСАНИЕ (для себя, подарки, дегустация)', html, () => {
+            const items = [];
+            let canProceed = true;
+            products.forEach(p => {
+                const qty = parseInt(document.getElementById(`qty_${p.sku}`).value) || 0;
+                if(qty > 0) {
+                    if((stock[p.sku]||0) < qty) { alert(`Не хватает ${p.name}`); canProceed = false; return; }
+                    items.push({ name: p.name, qty: qty, sku: p.sku, svPrice: p.svPrice, totalPrice: 0, totalPoints: 0 });
+                }
+            });
+            if(!canProceed) return;
+            items.forEach(item => { stock[item.sku] -= item.qty; });
+            addOperation('ЛИЧНОЕ', `ЛИЧНОЕ СПИСАНИЕ`, items);
+            computeStats();
+            renderProducts();
+        });
+    }
+
     function reverseOperation(op) {
         if(op.items && op.items.length) {
             op.items.forEach(item => {
@@ -261,6 +291,8 @@
                     stock[item.sku] = (stock[item.sku] || 0) + item.qty;
                     if(op.discountPercent === 0 && op.retailAdded) retailIncomeTotal -= op.retailAdded;
                     if(op.discountPercent !== null && op.discountPercent > 0 && op.companyIncome) companyCheckTotal -= op.companyIncome;
+                } else if(op.type === 'ЛИЧНОЕ') {
+                    stock[item.sku] = (stock[item.sku] || 0) + item.qty;
                 }
             });
         }
@@ -442,6 +474,7 @@
         if(currentTab === "main") filtered = operations.filter(op => op.type === "ОСНОВНОЙ СКЛАД");
         if(currentTab === "income") filtered = operations.filter(op => op.type === "ПРИХОД");
         if(currentTab === "sale") filtered = operations.filter(op => op.type === "ПРОДАЖА");
+        if(currentTab === "personal") filtered = operations.filter(op => op.type === "ЛИЧНОЕ");
         if(currentTab === "exchange") filtered = operations.filter(op => op.type === "ОБМЕН");
         const container = document.getElementById('historyLog');
         if(!filtered.length) { container.innerHTML = "<div style='padding:20px;text-align:center'>📭 Нет операций</div>"; return; }
@@ -497,6 +530,7 @@
 
     document.getElementById('incomeMassBtn').onclick = showMassIncome;
     document.getElementById('saleMassBtn').onclick = showMassSale;
+    document.getElementById('personalWriteOffBtn').onclick = showPersonalWriteOff;
     document.getElementById('exchangeBtn').onclick = exchange;
     document.getElementById('resetBtn').onclick = resetAll;
     document.getElementById('exportStockBtn').onclick = exportStock;
