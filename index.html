@@ -21,7 +21,7 @@
             padding: 20px 16px 28px;
             box-shadow: 0 8px 28px rgba(100, 70, 140, 0.15);
         }
-        h1 { font-size: 1.8rem; font-weight: 700; text-align: center; color: #5B3A7C; margin-bottom: 4px; }
+        h1 { font-size: 1.8rem; font-weight: 700; text-align: center; color: #5B3A7C; margin-bottom: 4px; cursor: pointer; }
         .sub { text-align: center; color: #7B5F9E; font-size: 0.75rem; margin-bottom: 20px; border-bottom: 1px solid #E2D5FF; padding-bottom: 8px; }
         
         .stats-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
@@ -39,6 +39,7 @@
         .btn-danger { background: #FFE0E5; color: #BB3B5C; }
         .btn-excel { background: #D9E6DB; color: #2C5A2E; }
         .btn-report { background: #E6D9FF; color: #5B3A7C; }
+        .btn-whatsapp { background: #25D366; color: white; }
         
         .filter-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 10px; justify-content: center; }
         .filter-btn { padding: 6px 12px; border-radius: 30px; border: none; background: #EEE4FF; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
@@ -62,6 +63,7 @@
         .delete-op-btn:hover { background: #FFE0E5; }
         
         .bottom-buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+        .backup-buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
         footer { font-size: 0.65rem; text-align: center; margin-top: 16px; color: #8E76AD; }
         
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s; }
@@ -75,19 +77,37 @@
         .month-select { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
         .month-btn { padding: 8px 12px; border-radius: 30px; border: none; background: #EEE4FF; cursor: pointer; }
         .month-btn.active { background: #C2ABE0; color: white; }
+        .admin-panel { background: #F0E8FF; border-radius: 32px; padding: 16px; margin-bottom: 16px; }
+        .key-result { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: white; padding: 8px; border-radius: 16px; text-align: center; margin: 10px 0; }
+        .contact-info { background: #E8F5E9; border-radius: 32px; padding: 16px; margin-top: 20px; text-align: center; border: 1px solid #A5D6A7; }
+        .whatsapp-btn { background: #25D366; color: white; border: none; border-radius: 40px; padding: 12px 20px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
     </style>
 </head>
 <body>
 <div class="app-container" id="app">
-    <div id="licenseScreen" style="display:none; text-align:center; padding:20px;">
-        <h2>🔐 Активация</h2>
-        <p>Код устройства:<br><strong id="deviceCode" style="font-size:1.2rem;"></strong></p>
-        <p>Отправьте код продавцу и получите ключ</p>
-        <input type="text" id="licenseKeyInput" placeholder="Введите ключ" style="width:100%; padding:10px; border-radius:30px; border:1px solid #DDCEFF; margin:10px 0;">
-        <button class="btn btn-primary" id="activateBtn">Активировать</button>
+    <div id="licenseScreen" style="display:flex; flex-direction:column; text-align:center; padding:20px;">
+        <h2>🌿 СКЛАД Herbalife</h2>
+        <p style="margin: 20px 0 10px;">🔐 Активация</p>
+        <p>Код устройства:<br><strong id="deviceCode" style="font-size:1.2rem; background:#EEE4FF; padding:8px; border-radius:20px; display:inline-block; margin:10px 0;"></strong></p>
+        <p style="font-size:0.8rem;">Отправьте этот код продавцу, чтобы получить ключ</p>
+        
+        <!-- КОНТАКТНАЯ ИНФОРМАЦИЯ ДЛЯ СВЯЗИ -->
+        <div class="contact-info" id="contactBlock">
+            <p style="margin-bottom:8px;">📞 Свяжитесь со мной для получения ключа:</p>
+            <a href="https://wa.me/message/TD45SYRF66AEK1" id="whatsappLink" target="_blank">
+                <button class="whatsapp-btn">📲 Написать в WhatsApp</button>
+            </a>
+            <p style="margin-top:10px; font-size:0.7rem; color:#666;">Напишите мне этот код, и я пришлю ключ активации</p>
+        </div>
+        
+        <input type="text" id="licenseKeyInput" placeholder="Введите ключ" style="width:100%; padding:12px; border-radius:30px; border:1px solid #DDCEFF; margin:10px 0; text-align:center;">
+        <button class="btn btn-primary" id="activateBtn" style="margin-top:5px;">Активировать</button>
+        <div id="adminLoginPanel" style="margin-top:20px; border-top:1px solid #DDCEFF; padding-top:15px;">
+            <p style="font-size:0.7rem; color:#8A6DAD;">Админ-доступ (5 раз нажмите на заголовок)</p>
+        </div>
     </div>
     <div id="mainApp" style="display:none;">
-        <h1>🌿 СКЛАД Herbalife</h1>
+        <h1 id="mainHeader">🌿 СКЛАД Herbalife</h1>
         <div class="sub">Супервайзер | полный ассортимент + учёт</div>
 
         <div class="stats-grid">
@@ -133,12 +153,27 @@
             <button class="btn btn-excel" id="exportSaleBtn">📊 Excel: Продажи</button>
             <button class="btn btn-report" id="monthlyReportBtn">📊 Отчёты по месяцам</button>
         </div>
-        <footer>🌿 Фильтры внизу | Личное списание — для себя | Отчёты по месяцам — доходы и заказы</footer>
+        <div class="backup-buttons">
+            <button class="btn btn-primary" id="backupSaveBtn">💾 Резервная копия</button>
+            <button class="btn btn-primary" id="backupLoadBtn">📂 Восстановить</button>
+        </div>
+        <footer>🌿 Нажмите 5 раз на заголовок для входа в админ-панель</footer>
     </div>
 </div>
 
 <script>
+    // ======================= ССЫЛКА ДЛЯ СВЯЗИ (твоя WhatsApp invite) =======================
+    const WHATSAPP_INVITE_LINK = "https://wa.me/message/TD45SYRF66AEK1";
+    // ================================================================================
+    
+    // Функция для обновления (оставляем для совместимости)
+    function updateWhatsAppLink() {
+        // Ссылка уже стоит в HTML
+    }
+    
     // ======================= ЛИЦЕНЗИЯ =======================
+    let adminMode = false;
+    
     function getDeviceId() {
         let id = localStorage.getItem("device_id");
         if(!id) {
@@ -155,13 +190,30 @@
         if(licensed === "true") return true;
         const deviceId = getDeviceId();
         document.getElementById("deviceCode").innerText = deviceId;
-        document.getElementById("licenseScreen").style.display = "block";
+        document.getElementById("licenseScreen").style.display = "flex";
         document.getElementById("mainApp").style.display = "none";
         return false;
     }
     
+    function generateKeyForDevice(deviceCode) {
+        let hash = 0;
+        for(let i = 0; i < deviceCode.length; i++) {
+            hash = ((hash << 5) - hash) + deviceCode.charCodeAt(i);
+            hash |= 0;
+        }
+        hash = Math.abs(hash);
+        const key = hash.toString(36).substring(0, 15).toUpperCase();
+        return key;
+    }
+    
+    function validateKey(deviceCode, userKey) {
+        const expectedKey = generateKeyForDevice(deviceCode);
+        return userKey === expectedKey;
+    }
+    
     function activateLicense(key) {
-        if(key && key.length > 10) {
+        const deviceId = getDeviceId();
+        if(validateKey(deviceId, key)) {
             localStorage.setItem("licensed", "true");
             return true;
         }
@@ -169,13 +221,74 @@
     }
     
     document.getElementById("activateBtn")?.addEventListener("click", () => {
-        const key = document.getElementById("licenseKeyInput").value;
+        const key = document.getElementById("licenseKeyInput").value.trim().toUpperCase();
         if(activateLicense(key)) {
             location.reload();
         } else {
-            alert("Неверный ключ");
+            alert("❌ Неверный ключ");
         }
     });
+    
+    // ======================= АДМИН-ПАНЕЛЬ (5 кликов по заголовку) =======================
+    let clickCount = 0;
+    let clickTimer = null;
+    
+    function showAdminPanel() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-card">
+                <h3>🔐 Админ-панель</h3>
+                <div class="admin-panel">
+                    <label>Код устройства покупателя:</label>
+                    <input type="text" id="adminDeviceCode" placeholder="Например: X7G9-4K2L-M1N8" style="width:100%; margin:10px 0; padding:10px;">
+                    <button class="btn btn-primary" id="adminGenerateBtn" style="width:100%;">🔑 Сгенерировать ключ</button>
+                    <div id="adminKeyResult" class="key-result" style="display:none;"></div>
+                    <hr style="margin:15px 0;">
+                    <p style="font-size:0.7rem; color:#666;">Сгенерированный ключ отправьте покупателю. Каждый ключ уникален для каждого устройства.</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn" id="adminCloseBtn">Закрыть</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('active'), 10);
+        
+        modal.querySelector('#adminGenerateBtn').onclick = () => {
+            const deviceCode = modal.querySelector('#adminDeviceCode').value.trim().toUpperCase();
+            if(deviceCode.length < 10) {
+                alert("Введите корректный код устройства (например, X7G9-4K2L-M1N8)");
+                return;
+            }
+            const key = generateKeyForDevice(deviceCode);
+            const resultDiv = modal.querySelector('#adminKeyResult');
+            resultDiv.innerHTML = `✅ Ключ для устройства:<br><strong style="font-size:1.3rem;">${key}</strong><br>Отправьте его покупателю`;
+            resultDiv.style.display = 'block';
+        };
+        
+        modal.querySelector('#adminCloseBtn').onclick = () => modal.remove();
+    }
+    
+    function setupAdminAccess() {
+        const header = document.getElementById('mainHeader') || document.querySelector('h1');
+        if(header) {
+            header.onclick = () => {
+                clickCount++;
+                if(clickTimer) clearTimeout(clickTimer);
+                clickTimer = setTimeout(() => { clickCount = 0; }, 1000);
+                if(clickCount >= 5) {
+                    clickCount = 0;
+                    const masterCode = prompt("🔐 Введите мастер-код для входа в админ-панель:");
+                    if(masterCode === "HERBALIFE2026") {
+                        showAdminPanel();
+                    } else if(masterCode) {
+                        alert("❌ Неверный мастер-код");
+                    }
+                }
+            };
+        }
+    }
     
     // ======================= ПОЛНЫЙ ПРАЙС-ЛИСТ =======================
     const products = [
@@ -537,7 +650,7 @@
         container.innerHTML = html;
         document.querySelectorAll('.delete-op-btn').forEach(btn => btn.onclick = () => deleteOperation(parseInt(btn.dataset.id)));
     }
-    
+
     function showMonthlyReport() {
         const months = {};
         
@@ -644,6 +757,58 @@
         }, 100);
     }
 
+    // ======================= РЕЗЕРВНОЕ КОПИРОВАНИЕ =======================
+    function backupSave() {
+        const data = {
+            stock: stock,
+            operations: operations,
+            retailIncomeTotal: retailIncomeTotal,
+            companyCheckTotal: companyCheckTotal,
+            device_id: localStorage.getItem("device_id"),
+            licensed: localStorage.getItem("licensed")
+        };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], {type: "application/json"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `herbalife_backup_${new Date().toISOString().slice(0,19)}.json`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        alert("💾 Резервная копия сохранена!");
+    }
+    
+    function backupLoad() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if(data.stock) stock = data.stock;
+                    if(data.operations) operations = data.operations;
+                    if(data.retailIncomeTotal !== undefined) retailIncomeTotal = data.retailIncomeTotal;
+                    if(data.companyCheckTotal !== undefined) companyCheckTotal = data.companyCheckTotal;
+                    if(data.device_id) localStorage.setItem("device_id", data.device_id);
+                    if(data.licensed) localStorage.setItem("licensed", data.licensed);
+                    saveAll();
+                    computeStats();
+                    renderProducts();
+                    renderHistory();
+                    alert("✅ Данные восстановлены!");
+                    location.reload();
+                } catch(err) {
+                    alert("❌ Ошибка при восстановлении: неверный файл");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
     function downloadCSV(filename, rows, headers) {
         let csv = headers.join(",")+"\n";
         rows.forEach(row => { csv += row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")+"\n"; });
@@ -689,6 +854,8 @@
     document.getElementById('exportIncomeBtn')?.addEventListener('click', exportIncome);
     document.getElementById('exportSaleBtn')?.addEventListener('click', exportSale);
     document.getElementById('monthlyReportBtn')?.addEventListener('click', showMonthlyReport);
+    document.getElementById('backupSaveBtn')?.addEventListener('click', backupSave);
+    document.getElementById('backupLoadBtn')?.addEventListener('click', backupLoad);
     document.getElementById('searchInput')?.addEventListener('input', () => renderProducts());
     
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -707,6 +874,7 @@
         renderHistory();
         document.getElementById("licenseScreen").style.display = "none";
         document.getElementById("mainApp").style.display = "block";
+        setupAdminAccess();
     }
 </script>
 </body>
