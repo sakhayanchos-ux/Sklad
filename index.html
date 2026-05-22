@@ -161,7 +161,6 @@
     }
     
     function activateLicense(key) {
-        // Простая проверка ключа (можно заменить на более сложную)
         if(key && key.length > 10) {
             localStorage.setItem("licensed", "true");
             return true;
@@ -276,9 +275,12 @@
         let total = 0;
         operations.forEach(op => {
             if(op.type === "ПРОДАЖА" && op.totalIncome) {
-                const opDate = new Date(op.date);
-                if(opDate.getMonth() === currentMonth && opDate.getFullYear() === currentYear) {
-                    total += op.totalIncome;
+                let parts = op.date.split(',')[0].split('.');
+                if(parts.length === 3) {
+                    let date = new Date(parts[2], parts[1]-1, parts[0]);
+                    if(date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                        total += op.totalIncome;
+                    }
                 }
             }
         });
@@ -358,7 +360,7 @@
         modal.innerHTML = `<div class="modal-card"><h3>${title}</h3>${contentHtml}<div class="modal-buttons"><button class="btn btn-primary" id="modalConfirm">✅ Подтвердить</button><button class="btn" id="modalCancel">Отмена</button></div></div>`;
         document.body.appendChild(modal);
         setTimeout(() => modal.classList.add('active'), 10);
-        modal.querySelector('#modalConfirm').onclick = () => { onConfirm(); modal.remove(); };
+        modal.querySelector('#modalConfirm').onclick = () => { if(onConfirm) onConfirm(); modal.remove(); };
         modal.querySelector('#modalCancel').onclick = () => modal.remove();
     }
 
@@ -535,31 +537,64 @@
         container.innerHTML = html;
         document.querySelectorAll('.delete-op-btn').forEach(btn => btn.onclick = () => deleteOperation(parseInt(btn.dataset.id)));
     }
-
+    
     function showMonthlyReport() {
         const months = {};
+        
         operations.forEach(op => {
-            if(op.type === "ПРОДАЖА") {
-                const date = new Date(op.date);
-                const key = `${date.getFullYear()}-${date.getMonth()+1}`;
-                if(!months[key]) months[key] = { sum: 0, retailIncome: 0, companyIncome: 0, count: 0, items: [] };
-                months[key].sum += op.totalSum || 0;
-                months[key].retailIncome += (op.discountPercent === 0 ? (op.totalSum || 0) : 0);
-                months[key].companyIncome += (op.discountPercent > 0 ? (op.totalIncome || 0) : 0);
-                months[key].count++;
-                months[key].items.push({ date: op.date, title: op.title, sum: op.totalSum, income: op.totalIncome });
+            if (op.type === "ПРОДАЖА") {
+                let dateStr = op.date;
+                let parts = dateStr.split(',')[0].split('.');
+                if (parts.length === 3) {
+                    let day = parts[0];
+                    let month = parts[1];
+                    let year = parts[2];
+                    let date = new Date(year, month - 1, day);
+                    if (!isNaN(date.getTime())) {
+                        const key = `${year}-${month}`;
+                        if (!months[key]) {
+                            months[key] = {
+                                sum: 0,
+                                retailIncome: 0,
+                                companyIncome: 0,
+                                count: 0,
+                                orders: []
+                            };
+                        }
+                        months[key].sum += op.totalSum || 0;
+                        if (op.discountPercent === 0) {
+                            months[key].retailIncome += op.totalSum || 0;
+                        } else if (op.discountPercent > 0) {
+                            months[key].companyIncome += op.totalIncome || 0;
+                        }
+                        months[key].count++;
+                        months[key].orders.push({
+                            date: op.date,
+                            title: op.title,
+                            sum: op.totalSum,
+                            income: op.totalIncome,
+                            items: op.items || []
+                        });
+                    }
+                }
             }
         });
         
-        let html = `<div class="month-select" id="monthSelect">`;
+        if (Object.keys(months).length === 0) {
+            showCustomModal('📊 Отчёты по месяцам', '<div style="text-align:center; padding:20px;">📭 Нет продаж. Сделайте первую продажу через кнопку "ПРОДАЖА"</div>', () => {});
+            return;
+        }
+        
+        let monthButtonsHtml = '<div class="month-select" id="monthSelect">';
         Object.keys(months).sort().reverse().forEach(key => {
             const [year, month] = key.split('-');
-            const monthName = new Date(parseInt(year), parseInt(month)-1).toLocaleString('ru', { month: 'long' });
-            html += `<button class="month-btn" data-month="${key}">${monthName} ${year}</button>`;
+            const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            const monthName = monthNames[parseInt(month) - 1];
+            monthButtonsHtml += `<button class="month-btn" data-month="${key}">${monthName} ${year}</button>`;
         });
-        html += `</div><div id="monthReportContent"></div>`;
+        monthButtonsHtml += '</div><div id="monthReportContent"></div>';
         
-        showCustomModal('📊 Отчёты по месяцам', html, () => {});
+        showCustomModal('📊 Отчёты по месяцам', monthButtonsHtml, () => {});
         
         setTimeout(() => {
             document.querySelectorAll('.month-btn').forEach(btn => {
@@ -569,11 +604,29 @@
                     const key = btn.dataset.month;
                     const data = months[key];
                     const [year, month] = key.split('-');
-                    const monthName = new Date(parseInt(year), parseInt(month)-1).toLocaleString('ru', { month: 'long' });
-                    let itemsHtml = '<div style="margin-top:12px;"><strong>📋 Заказы:</strong></div>';
-                    data.items.forEach(item => {
-                        itemsHtml += `<div style="border-top:1px solid #eee; padding:6px 0;">🕒 ${item.date}<br>${item.title}<br>💰 ${item.sum?.toFixed(2)} ₽ | 💚 ${item.income?.toFixed(2)} ₽</div>`;
+                    const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+                    const monthName = monthNames[parseInt(month) - 1];
+                    
+                    let ordersHtml = '<div style="margin-top:12px;"><strong>📋 Заказы:</strong></div>';
+                    data.orders.forEach(order => {
+                        let itemsList = '';
+                        if (order.items && order.items.length) {
+                            itemsList = '<div style="margin-left:12px; font-size:0.7rem;">';
+                            order.items.forEach(item => {
+                                itemsList += `• ${item.name} × ${item.qty}<br>`;
+                            });
+                            itemsList += '</div>';
+                        }
+                        ordersHtml += `
+                            <div style="border-top:1px solid #eee; padding:8px 0;">
+                                🕒 ${order.date}<br>
+                                ${order.title}<br>
+                                ${itemsList}
+                                💰 ${order.sum?.toFixed(2)} ₽ | 💚 ${order.income?.toFixed(2)} ₽
+                            </div>
+                        `;
                     });
+                    
                     document.getElementById('monthReportContent').innerHTML = `
                         <div style="background:#F9F5FF; border-radius:28px; padding:12px; margin-top:12px;">
                             <div><strong>${monthName} ${year}</strong></div>
@@ -581,11 +634,13 @@
                             <div>💸 Доход розница: ${data.retailIncome.toFixed(2)} ₽</div>
                             <div>🧾 Чек от компании: ${data.companyIncome.toFixed(2)} ₽</div>
                             <div>🛍️ Количество заказов: ${data.count}</div>
-                            ${itemsHtml}
+                            ${ordersHtml}
                         </div>
                     `;
                 };
             });
+            const firstBtn = document.querySelector('.month-btn');
+            if (firstBtn) firstBtn.click();
         }, 100);
     }
 
